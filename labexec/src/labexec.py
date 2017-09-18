@@ -320,7 +320,7 @@ def exec_remote():
 def main():
     if USER == "":
         print_err("Please set the USER in labexec.py")
-    exit(1)
+        exit(1)
 
     init_labs()
     parse_args(sys.argv)
