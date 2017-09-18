@@ -35,7 +35,8 @@ scp_src         = ""
 scp_dst         = ""
 num_complete    = 0
 DOMAIN          = ".cs.curtin.edu.au"
-USER            = "17086424"
+USER            = ""
+
 SSH_COMMAND     = "ssh -t -o BatchMode=yes -o ConnectTimeout=3 \
 -o StrictHostKeyChecking=no "
 SCP_COMMAND     = "scp -r -o BatchMode=yes -o ConnectTimeout=3 \
@@ -317,6 +318,10 @@ def exec_remote():
 ##
 # Drives the execution.
 def main():
+    if USER == "":
+        print_err("Please set the USER in labexec.py")
+    exit(1)
+
     init_labs()
     parse_args(sys.argv)
 

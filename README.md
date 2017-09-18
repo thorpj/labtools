@@ -1,5 +1,5 @@
 # labtools
-Some tools and scrips to make life easier.
+Some tools and scripts to make life easier.
 
 ## Contents
 
