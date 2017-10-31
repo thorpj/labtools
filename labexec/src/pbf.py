@@ -167,9 +167,7 @@ def parse_scp(src, dst):
     global scp_src
     global scp_dst
     global scp_mode
-    scp_root_src = src
-    scp_root_dst = dst
-    scp_src = dst
+    scp_src = src
     scp_dst = dst
     scp_mode = True
 
@@ -178,6 +176,7 @@ def parse_scp(src, dst):
 # Parse the command given by the user.
 def parse_args(args):
     global script_mode
+    global root_host
     if len(args) < 2:
         print_help()
 
@@ -304,6 +303,9 @@ def execute_scp():
     global specified_hosts
     global num_complete
     num_ok = 0
+
+    hosts_done.append(specified_hosts[0])
+    del specified_hosts[0]
 
     for h in specified_hosts:
         hosts_busy.append(h)
