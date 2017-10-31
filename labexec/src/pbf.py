@@ -70,7 +70,7 @@ def init_labs():
     "lab218-d02" + DOMAIN,
     "lab218-d03" + DOMAIN,
     "lab218-d04" + DOMAIN,
-    "lab218-d04" + DOMAIN]
+    "lab218-d05" + DOMAIN]
 
     labs["219"]  = [
     "lab219-a01" + DOMAIN,
@@ -254,7 +254,7 @@ def print_help():
 def print_progress_bar(num, total):
     total_len = 50
     progress = int(total_len * (float(num) / float(total)))
-    sys.stdout.write("\r" + (progress) * u"\u2588" + int(total_len - progress) * u"\u2591" + " - " + str((float(num) * 100.0) / float(total)) + "% Complete")
+    sys.stdout.write("\r" + (progress) * "#" + int(total_len - progress) * " " + " - " + str((float(num) * 100.0) / float(total)) + "% Complete")
     sys.stdout.flush()
     if total == num:
         print "."
@@ -278,7 +278,7 @@ def get_host():
 def scp(src, dst, dst_host):
     src_host = get_host()
     hosts_busy.append(src_host)
-    ret = execute(SCP_COMMAND + " " + USER + "@" + src_host + ":" + src + " .", dst_host)
+    ret = execute(SCP_COMMAND + " " + USER + "@" + src_host + ":" + src + " " + dst, dst_host)
     hosts_busy.remove(src_host)
 
     return ret
@@ -349,7 +349,7 @@ def main():
 
     else:
         if scp_mode:
-            print 'Pushing "' + scp_src + '" to ' + str(len(specified_hosts)) +\
+            print 'Pushing "' + scp_src + '" to ' + str(len(specified_hosts) - 1) +\
             " hosts."
 
     if get_num_hosts_down() > 0:
