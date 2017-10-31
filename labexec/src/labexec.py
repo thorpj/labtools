@@ -37,8 +37,8 @@ scp_src         = ""
 scp_dst         = ""
 num_complete    = 0
 DOMAIN          = ".cs.curtin.edu.au"
-USER            = "special"
-# USER            = "17086424"
+# USER            = "special"
+USER            = "17086424"
 
 SSH_COMMAND     = "ssh -t -o BatchMode=yes -o ConnectTimeout=3 \
 -o StrictHostKeyChecking=no "
@@ -266,7 +266,7 @@ def print_help():
 def print_progress_bar(num, total):
     total_len = 50
     progress = int(total_len * (float(num) / float(total)))
-    sys.stdout.write("\r" + (progress) * u"\u2588" + int(total_len - progress) * u"\u2591" + " - " + str((float(num) * 100.0) / float(total)) + "% Complete")
+    sys.stdout.write("\r" + (progress) * "#" + int(total_len - progress) * " " + " - " + str(int((float(num) * 100.0) / float(total))) + "% Complete")
     sys.stdout.flush()
     if total == num:
         print "."
