@@ -30,19 +30,20 @@ class bcolors:
 labs            = {}
 specified_hosts = []
 scp_mode        = False
-files_hash      = ""
 script_mode     = False
 cmd             = ""
 scp_src         = ""
 scp_dst         = ""
+
 num_complete    = 0
 DOMAIN          = ".cs.curtin.edu.au"
-USER            = "special"
-# USER            = "17086424"
+#USER            = "special"
+USER            = "17086424"
+TIMEOUT         = "3"
 
-SSH_COMMAND     = "ssh -t -o BatchMode=yes -o ConnectTimeout=3 \
+SSH_COMMAND     = "ssh -t -o BatchMode=yes -o ConnectTimeout=" + TIMEOUT + " \
 -o StrictHostKeyChecking=no "
-SCP_COMMAND     = "scp -r -o BatchMode=yes -o ConnectTimeout=3 \
+SCP_COMMAND     = "scp -r -o BatchMode=yes -o ConnectTimeout=" + TIMEOUT + " \
 -o StrictHostKeyChecking=no "
 time            = datetime.datetime.now().strftime("%d-%m,%H:%M:%S")
 LOG_FILE        = time + "stdout.log"
@@ -86,6 +87,9 @@ def init_labs():
     labs["232"]  = [
     "lab232-a01" + DOMAIN,
     "lab232-a02" + DOMAIN]
+
+hosts_done = []
+hosts_busy = []
 
 
 ##
@@ -163,7 +167,9 @@ def parse_scp(src, dst):
     global scp_src
     global scp_dst
     global scp_mode
-    scp_src = src
+    scp_root_src = src
+    scp_root_dst = dst
+    scp_src = dst
     scp_dst = dst
     scp_mode = True
 
@@ -193,18 +199,8 @@ def parse_args(args):
             if arg == "-l" or arg == "--labs":
                 skip_next = True
                 specify_labs(args[idx])
-            elif arg == "-f" or arg == "--file":
-                skip_next = True
-                parse_lab_file(args[idx])
-            elif arg == "-s" or arg == "--script":
-                script_mode = True
-                parse_cmd("'sh -s' < " + args[idx])
-                return
             elif arg == "-p" or arg == "--push":
                 parse_scp(args[idx], args[idx + 1])
-                return
-            elif arg == "-c" or arg == "--command":
-                parse_cmd("".join(x + " " for x in args[idx:]))
                 return
             else:
                 print_err('Invalid option "' + arg + '"')
@@ -250,13 +246,6 @@ def print_help():
 
     print "  -l,    --labs: Specify which lab(s) to remotely execute commands."
     print "                 (Comma separated values. E.g. 218,221,232)"
-    print "  -f,    --file: Specify a line seperated file of hostnames or IP"
-    print "                 addresses to remotely execute commands."
-    print "  -c, --command: Everything after this flag is interpreted as the"
-    print "                 command to be executed remotely."
-    print "  -s,  --script: Specify a script to be executed remotely."
-    print "  -p,    --push: Use scp to push a file/directory. \
-    Provide paths only."
     print "\nPlease be aware that without key auth, this is basically useless."
 
     exit(1)
@@ -273,14 +262,27 @@ def print_progress_bar(num, total):
 ##
 # Execute a command over ssh.
 def execute(command, host):
-    return os.system(SSH_COMMAND + USER + "@" + host + " " + command + \
+    print SSH_COMMAND + USER + "@" + host + " " + command + \
+        " 1>> " + LOG_FILE + " 2>> " + ERR_FILE
+    ret = os.system(SSH_COMMAND + USER + "@" + host + " " + command + \
         " 1>> " + LOG_FILE + " 2>> " + ERR_FILE)
+
+    return ret
+
+def get_host():
+    for h in hosts_done:
+        if h not in hosts_busy:
+            return h
 
 ##
 # Execute scp for a given file.
-def scp(src, dst, host):
-    return os.system(SCP_COMMAND + " " + src + " " + USER + "@" + host + \
-        ":" + dst + " 1>> " + LOG_FILE + " 2>> " + ERR_FILE)
+def scp(src, dst, dst_host):
+    src_host = get_host()
+    hosts_busy.append(src_host)
+    ret = execute(SCP_COMMAND + " " + USER + "@" + src_host + ":" + src + " .", dst_host)
+    hosts_busy.remove(src_host)
+
+    return ret
 
 ##
 # Calls execute on all specified hosts.
@@ -304,9 +306,12 @@ def execute_scp():
     num_ok = 0
 
     for h in specified_hosts:
+        hosts_busy.append(h)
         if scp(scp_src, scp_dst, h) == 0:
             num_ok += 1
             num_complete += 1
+            hosts_busy.remove(h)
+            hosts_done.append(h)
 
     return num_ok
 
@@ -323,9 +328,7 @@ def exec_remote():
     if scp_mode:
         print_msg('"' + scp_src + '" successfuly pushed to ' + \
             str(execute_scp()) + " hosts.")
-    else:
-        print_msg('"' + cmd + '" successfuly sent to ' + \
-            str(execute_cmd()) + " hosts.")
+
     print "See " + LOG_FILE + " for the output of each."
 
 ##
@@ -345,12 +348,6 @@ def main():
     else:
         if scp_mode:
             print 'Pushing "' + scp_src + '" to ' + str(len(specified_hosts)) +\
-            " hosts."
-        elif script_mode:
-            print 'Executing "' + cmd.replace("'sh -s' < ", "") + '" on ' + \
-            str(len(specified_hosts)) + " hosts."
-        else:
-            print 'Executing "' + cmd + '" on ' + str(len(specified_hosts)) + \
             " hosts."
 
     if get_num_hosts_down() > 0:
