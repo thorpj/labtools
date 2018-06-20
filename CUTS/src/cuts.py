@@ -15,15 +15,23 @@
 import sys
 import copy
 import time
+import datetime
+from enum import IntEnum
+import typing
 
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.keys import Keys
 
+# TODO use config file
+webdriver_path = "C:\\chromedriver.exe"
+
+Weekdays = Monday, Tuesday, Wednesday, Thursday, Friday =
+
 ##
 # Class to store the information for a practical/workshop.
-class prac():
+class Prac:
     def __init__(self, name, start_time_one, start_time_two, room, day, color):
         self.day = day
         self.unit_code = ""
@@ -37,24 +45,127 @@ class prac():
         return self.name + ", " + self.day + ", " + str(self.start_time_one) + " - " + str(self.start_time_two) + ", " + self.room
 
 
-# Set up the browser emulation and connect.
-url = "http://timetable.student.curtin.edu.au/criteriaEntry.jsf"
-driver = webdriver.PhantomJS()
-driver.get(url)
-driver.implicitly_wait(5)
-driver.set_window_size(1120, 550)
 
-# Map of lists of prac times
-time_slots = {}
+class Room:
+    def __init__(self, building, room):
+        self.building = building
+        self.room = room
+        self.level = room[0]
 
-##
-# Initialise the timeslot keys.
-def init_timeslots():
-    time_slots["Monday"] = []
-    time_slots["Tuesday"] = []
-    time_slots["Wednesday"] = []
-    time_slots["Thursday"] = []
-    time_slots["Friday"] = []
+
+class Browser:
+    def __init__(self, url):
+        self.driver = webdriver.Chrome(webdriver_path)
+        self.url = url
+
+    def setup_window(self):
+        self.driver.get(self.url)
+        self.driver.implicitly_wait(5)
+        self.driver.set_window_size(1120, 550)
+
+class Session:
+    def __init__(self, name, timeslot, room, color):
+        self.name = name
+        self.start = timeslot.
+        self.timeslot = timeslot
+        self.room = room
+        self.color = color
+
+class Timetable:
+    MIN_TIME = 8
+    MAX_TIME = 18
+    Days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']
+
+    def __init__(self):
+        self.week = {}
+
+        for day in Timetable.Days:
+            self.week[day] = []
+
+    def day(self, name):
+        return self.week[name]
+
+    def add_session(self, session):
+        (self.day(session.day)).append(session)
+
+    def remove_session(self, session):
+        (self.day(session.day)).remove(session)
+
+
+
+
+
+# class Day:
+#     def __init__(self, day):
+#         if day not in Weekdays:
+#             raise InvalidDayError(day)
+#         self.day = day
+#
+#         self.timeslots = self.build_timeslots()
+#
+#     def build_timeslots(self):
+#         for time in r
+#
+#
+#     def __repr__(self):
+#         return self.day
+
+
+class Timeslot
+    def __init__(self, start, end, day):
+
+        if all([start, end]) not in range(Timetable.MIN_TIME, Timetable.MAX_TIME + 1):
+            raise InvalidTimeError([start, end])
+        if start >= end:
+            raise InvalidDayError([start, end])
+
+        self.start = start
+        self.end = end
+        self.day = day
+
+    def conflicts_with(self, timeslot):
+        conflict = True
+        if self.end.time() < timeslot.start.time():
+            conflict = False
+        elif self.start.time() > timeslot.end.time():
+            conflict = False
+        return conflict
+
+
+class Unit:
+    def __init__(self, name, code, color):
+        self.name = name
+        self.code = code
+        self.color = color
+
+class InvalidDayError(Exception):
+    pass
+    #TODO
+
+class InvalidTimeError(Exception):
+    pass
+    #TODO
+
+
+class Time:
+    def __init__(self, time: str):
+        self._time = None
+        self.time = time
+
+    @property
+    def time(self):
+        return self._time
+
+    @time.setter
+    def time(self, value):
+        self._time = datetime.datetime.strptime(time, "%H:%M")
+
+    @time.getter
+    def time(self):
+        return self._time.time()
+
+
+
 
 ##
 # Search for a unit on the website.
@@ -126,7 +237,7 @@ def add_class_to_timeslot(c, name, color):
     end = int(parts[6].split(":")[0])
     room = parts[11]
 
-    time_slots[day].append(prac(name, start, end, room, day, color))
+    time_slots[day].append(Prac(name, start, end, room, day, color))
 
 ##
 # The driver code which is the sequence of calls in order to get the data
@@ -209,18 +320,18 @@ def print_html(room_num):
     </tr>\n"""
 
     table = {}
-    
+
     for t in times:
         table[t] = []
         table[t].append('<tr><td bgcolor="white" >' + t + ':00</td>')
 
-        for i in xrange(5):
-            table[t].append(generate_line(prac("", t, str(int(t) + 1), "", "", "white" )))
+        for i in range(5):
+            table[t].append(generate_line(Prac("", t, str(int(t) + 1), "", "", "white" )))
 
     for c in classes:
         idx = get_index_of_day(c.day)
-        
-        # This generated the html, does two blocks for a two hour prac.
+
+        # This generates the html, does two blocks for a two hour prac.
         table[str(c.start_time_one)][idx] = generate_line(c)
         if c.start_time_two - c.start_time_one > 1:
             table[str(c.start_time_one + 1)][idx] = generate_line(c)
@@ -240,10 +351,12 @@ def print_html(room_num):
 ##
 # Here you need to specify the unit codes, names and colour to be
 # included.
-if __name__ == '__main__':
+def main():
+    url = "http://timetable.student.curtin.edu.au/criteriaEntry.jsf"
+
     init_timeslots()
 
-    units = [
+    units_data = [
     ("UCP", "COMP1000", "#FC8D75"),
     ("OOPD", "COMP1001", "#92FC75"),
     ("DSA", "COMP1002", "#F4FC5B"),
@@ -277,6 +390,14 @@ if __name__ == '__main__':
     ("TFCS", "COMP5001", "#AFB906")
     ]
 
+    known_units = []
+    for unit_data in units_data:
+        unit = Unit(*unit_data)
+        known_units.append(unit)
+
+
+
+
     sys.stderr.write("Gathering timetable information for " +\
      str(len(units)) + " units. This may take some time.\n\n")
 
@@ -303,3 +424,5 @@ if __name__ == '__main__':
     f.close()
 
 
+if __name__ == '__main__':
+    main()
